@@ -1,0 +1,21 @@
+# ignore file types
+*.pyd
+*.pyc
+*.c
+*.log
+*.csv
+*.json
+*.ini
+*.config
+*.whl
+*.py
+
+# ignore directories
+__paycache__
+.vscode
+blueshift/
+blueshift.egg-info/
+build/
+docs/
+help/
+tests/

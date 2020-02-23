@@ -1,0 +1,6 @@
+# Dev machine PIP version - update it. Also we require python>=3.6
+pip>=10.0.0
+
+# to import aws requirements
+boto3==1.12.5
+awscli==1.18.5
