@@ -51,9 +51,10 @@ def ls(ctx, path, verbose):
     """
     access_key = ctx.obj['access_key']
     secret_key = ctx.obj['secret_key']
+    profile_name = ctx.obj['profile_name']
     
     with OSEnvAwsReset(access_key, secret_key):
-        awsS3 = AwsS3(access_key, secret_key)
+        awsS3 = AwsS3(access_key, secret_key, profile_name)
         items = awsS3.ls(path)
         if items:
             print(items)
