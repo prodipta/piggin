@@ -31,10 +31,10 @@ def s3(ctx):
         Usage:\n
             piggin --help\n
             piggin s3 ls [options] path\n
-            piggin s3 mkbucket [options] name\n
+            piggin s3 mkdir [options] name\n
+            piggin s3 rm [options] path\n
             piggin s3 mv [options] src dest\n
             piggin s3 cp [options] src dest\n
-            piggin s3 rm [options] path\n
     """
     pass
 
@@ -60,7 +60,7 @@ def ls(ctx, path, verbose):
             print(items)
             
 @s3.command(context_settings=CONTEXT_SETTINGS)
-@click.argument('path', default='s3:///')
+@click.argument('path')
 @click.option(
     '--verbose/--silent',
     '-v',
@@ -74,7 +74,7 @@ def ls(ctx, path, verbose):
 @click.pass_context
 def rm(ctx, path, verbose, recursive):
     """
-        list s3 buckets.
+        delete s3 buckets or keys/ objects.
     """
     access_key = ctx.obj['access_key']
     secret_key = ctx.obj['secret_key']
@@ -82,5 +82,40 @@ def rm(ctx, path, verbose, recursive):
     with OSEnvAwsReset(access_key, secret_key):
         awsS3 = AwsS3(access_key, secret_key)
         awsS3.rm(path, verbose, recursive)
+        
+@s3.command(context_settings=CONTEXT_SETTINGS)
+@click.argument('path')
+@click.option(
+    '--verbose/--silent',
+    '-v',
+    default=True,
+    help='Turn on/ off verbosity. [verbose/silent]')
+@click.option(
+    '--parent/--noparent',
+    '-p',
+    default=False,
+    help='Turn on/ off parent option.')
+@click.option(
+    '--location',
+    '-l',
+    default=None,
+    help='AWS location in case of bucket, ignored otherwise.')
+@click.option(
+    '--acl',
+    default='private',
+    help='AWS ACL in case of bucket, ignored otherwise.')
+@click.pass_context
+def mkdir(ctx, path, verbose, parent, location, acl):
+    """
+        create s3 buckets or keys.
+    """
+    access_key = ctx.obj['access_key']
+    secret_key = ctx.obj['secret_key']
+    
+    print(f'{path},{verbose},{parent},{location},{acl}')
+    
+    with OSEnvAwsReset(access_key, secret_key):
+        awsS3 = AwsS3(access_key, secret_key)
+        awsS3.mkdir(path, verbose, parent, location, acl)
     
 

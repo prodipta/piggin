@@ -14,6 +14,7 @@
 
 import logging
 import boto3
+from botocore.exceptions import ClientError
 
 from piggin.utils.utils import confirm_action
 
@@ -23,14 +24,71 @@ class AwsS3(object):
         session = boto3.Session(aws_access_key_id=access_key,
                                 aws_secret_access_key=secret_key,
                                 profile_name=profile_name)
+        self._default_region = session.region_name
         self._s3r = session.resource('s3')
         self._s3c = session.client('s3')
         self._logger = logging.getLogger('s3')
+        
+    def mkdir(self, str_path, confirm, parent, location, acl):
+        if not str_path.startswith('s3:'):
+            str_path = 's3:///' + str_path
+            
+        protocol, bucket, key, path = self.parse_path(str_path)
+        
+        if protocol != 's3':
+            self._logger.error('Path {} not an s3 object'.format(str_path))
+            return
+        
+        if bucket == '' or bucket is None:
+            self._logger.error('missing bucket name.')
+            return
+        
+        if location is None:
+            location = self._default_region
+        
+        if key == '':
+            if confirm:
+                msg = f'are you sure to create bucket {bucket}'
+                response = confirm_action(msg)
+                if not response:
+                    return
+            self.mkbucket(bucket, acl, location)
+        else:
+            if confirm:
+                msg = f'are you sure to create {key} in {bucket}'
+                response = confirm_action(msg)
+                if not response:
+                    return
+            
+            try:
+                self._s3c.head_bucket(Bucket=bucket)
+            except ClientError:
+                if parent:
+                    self.mkbucket(bucket, acl, location)
+                else:
+                    msg = f'cannot create, bucket {bucket} does not exist.'
+                    self._logger.error(msg)
+                    return
+                    
+            if not parent:
+                all_keys = key.split('/')
+                parent_key = '/'.join(all_keys[:-1])
+                if not parent_key.endswith('/'):
+                    parent_key = parent_key+'/'
+                objects = self.list_objects(bucket, parent_key)
+                if not objects:
+                    msg = f'cannot create, parent {parent_key} does not exist.'
+                    self._logger.error(msg)
+                    return
+                    
+            if not key.endswith('/'):
+                key = key+'/'
+            self.touch(bucket, key)
     
     def mkbucket(self, bucket_name, acl, location):
         self.create_bucket(bucket_name, acl=acl, location=location)                
             
-    def mkdir(self, strpath):
+    def create_key(self, strpath):
         protocol, bucket, key, path = self.parse_path(strpath)
         if protocol == 's3':
             if not key.endswith('/'):
@@ -108,7 +166,8 @@ class AwsS3(object):
             buckets = [b['Name'] for b in response['Buckets']]
             return buckets
         except Exception as e:
-            self._logger.error(str(e))
+            msg = f'listing buckets:'+str(e)
+            self._logger.error(msg)
             
     def list_objects(self, bucket, key):     
         if bucket == '' or bucket is None:
@@ -182,18 +241,20 @@ class AwsS3(object):
             msg = f'deleting all under {key} in {bucket_name}:'+str(e)
             self._logger.error(msg)
     
-    def create_bucket(self, bucket_name, *args, **kwargs ):
+    def create_bucket(self, bucket_name, acl, location):
         if bucket_name == '' or bucket_name is None:
             self._logger.error('missing bucket name.')
             return
         
-        location = kwargs.pop('location', 'us-west-1')
-        acl = kwargs.pop('acl', 'private')
+        if acl is None:
+            msg = f'cannot create bucket {bucket_name}: missing acl.'
+            self._logger.error(msg)
+            return
         
-        if not location:
-            location = 'us-west-1'
-        if not acl:
-            acl = 'private'
+        if location is None:
+            msg = f'cannot create bucket {bucket_name}: missing location.'
+            self._logger.error(msg)
+            return
         
         acl = acl.strip('\"').strip("\'")
         location = location.strip('\"').strip("\'")
@@ -202,7 +263,8 @@ class AwsS3(object):
             self._s3r.create_bucket(Bucket=bucket_name, ACL = acl,
             CreateBucketConfiguration={'LocationConstraint':location})
         except Exception as e:
-            self._logger.error(str(e))
+            msg = f'creating bucket {bucket_name}:'+str(e)
+            self._logger.error(msg)
             
     def delete_bucket(self, bucket_name):
         if bucket_name == '' or bucket_name is None:
@@ -213,7 +275,8 @@ class AwsS3(object):
             bucket.objects.all().delete()
             bucket.delete()
         except Exception as e:
-            self._logger.error(str(e))
+            msg = f'deleting bucket {bucket_name}:'+str(e)
+            self._logger.error(msg)
             
     @classmethod
     def parse_path(cls, str_path):
