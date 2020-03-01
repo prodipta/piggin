@@ -20,8 +20,6 @@ from piggin.utils.utils import confirm_action
 class AwsS3(object):
     
     def __init__(self, access_key=None, secret_key=None, profile_name=None):
-        self._access_key = access_key
-        self._secret_key = secret_key
         session = boto3.Session(aws_access_key_id=access_key,
                                 aws_secret_access_key=secret_key,
                                 profile_name=profile_name)
