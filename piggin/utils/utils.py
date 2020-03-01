@@ -43,4 +43,12 @@ def read_tags(tag):
     return tags
         
         
-                
+def confirm_action(msg):
+    msg = msg+f'[y/N]?:'
+    action = input(msg).lower()
+    
+    if action not in ['y','yes']:
+        return False
+    
+    return True
+    

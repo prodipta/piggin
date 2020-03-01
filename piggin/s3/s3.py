@@ -15,6 +15,8 @@
 import logging
 import boto3
 
+from piggin.utils.utils import confirm_action
+
 class AwsS3(object):
     
     def __init__(self, access_key=None, secret_key=None, profile_name=None):
@@ -48,25 +50,46 @@ class AwsS3(object):
         else:
             raise('Unknown source {} or destination {}'.format(str_src, str_dest))
     
-    def rm(self, str_path):
+    def rm(self, str_path, confirm=True, recursive=False):
+        if not str_path.startswith('s3:'):
+            str_path = 's3:///' + str_path
+            
         protocol, bucket, key, path = self.parse_path(str_path)
-        if protocol == 's3':
-            if key == '':
-                raise('Attempt to delete a bucket, call delete')
-            else:
-                self.delete_object(bucket, key)
+        
+        if protocol != 's3':
+            self._logger.error('Path {} not an s3 object'.format(str_path))
+            return
+        
+        if bucket == '' or bucket is None:
+            self._logger.error('missing bucket name.')
+            return
+        
+        if not recursive:
+            tmp_key = key
+            if key != '' and not key.endswith('/'):
+                tmp_key = key+'/'
+            objects = self.list_objects(bucket, tmp_key)
+            if tmp_key in objects:
+                objects.remove(tmp_key)
+            if objects:
+                msg = 'cannot delete, not empty.'
+                self._logger.error(msg)
+                return
+        
+        if key == '':
+            if confirm:
+                msg = f'are you sure to delete bucket {bucket}'
+                response = confirm_action(msg)
+                if not response:
+                    return
+            self.delete_bucket(bucket)
         else:
-            raise('Path {} not an s3 object'.format(str_path))
-    
-    def delete(self, str_path):
-        protocol, bucket, key, path = self.parse_path(str_path)
-        if protocol == 's3':
-            if key == '':
-                self.delete_bucket(bucket)
-            else:
-                raise('Path {} not an s3 bucket'.format(str_path))
-        else:
-            self.delete_bucket(str_path)
+            if confirm:
+                msg = f'are you sure to delete {key} in {bucket}'
+                response = confirm_action(msg)
+                if not response:
+                    return
+            self.delete_objects(bucket, key)
     
     def ls(self, str_path):
         if not str_path.startswith('s3:'):
@@ -89,12 +112,17 @@ class AwsS3(object):
         except Exception as e:
             self._logger.error(str(e))
             
-    def list_objects(self, bucket, key):        
+    def list_objects(self, bucket, key):     
+        if bucket == '' or bucket is None:
+            self._logger.error('missing bucket name.')
+            return
+        
         try:
             objects = self._list_s3_objects(bucket, key)
             return [o for o in objects]
         except Exception as e:
-            self._logger.error(str(e))
+            msg = f'listing {key} in {bucket}:'+str(e)
+            self._logger.error(msg)
     
     def upload(self, bucket_name, key, file_name):
         with open(file_name, 'rb') as fd:
@@ -104,6 +132,14 @@ class AwsS3(object):
                 self._logger.error(str(e))
                 
     def touch(self, bucket_name, key):
+        if bucket_name == '' or bucket_name is None:
+            self._logger.error('missing bucket name.')
+            return
+        
+        if key == '' or key is None:
+            self._logger.error('missing key name.')
+            return
+        
         try:
             self._s3r.Object(bucket_name, key).put(Body='')
         except Exception as e:
@@ -116,13 +152,43 @@ class AwsS3(object):
             self._logger.error(str(e))
     
     def delete_object(self, bucket_name, key):
+        if bucket_name == '' or bucket_name is None:
+            self._logger.error('missing bucket name.')
+            return
+        
+        if key == '' or key is None:
+            self._logger.error('missing key name.')
+            return
+        
         try:
             obj = self._s3r.Object(bucket_name, key)
             obj.delete()
         except Exception as e:
-            self._logger.error(str(e))
+            msg = f'deleting {key} in {bucket_name}:'+str(e)
+            self._logger.error(msg)
+            
+    def delete_objects(self, bucket_name, key):
+        if bucket_name == '' or bucket_name is None:
+            self._logger.error('missing bucket name.')
+            return
+        
+        if key == '' or key is None:
+            self._logger.error('missing key name.')
+            return
+        
+        try:
+            bucket = self._s3r.Bucket(bucket_name)
+            bucket.objects.filter(Prefix=key).delete()
+            self.delete_object(bucket_name, key)
+        except Exception as e:
+            msg = f'deleting all under {key} in {bucket_name}:'+str(e)
+            self._logger.error(msg)
     
     def create_bucket(self, bucket_name, *args, **kwargs ):
+        if bucket_name == '' or bucket_name is None:
+            self._logger.error('missing bucket name.')
+            return
+        
         location = kwargs.pop('location', 'us-west-1')
         acl = kwargs.pop('acl', 'private')
         
@@ -141,6 +207,9 @@ class AwsS3(object):
             self._logger.error(str(e))
             
     def delete_bucket(self, bucket_name):
+        if bucket_name == '' or bucket_name is None:
+            self._logger.error('missing bucket name.')
+            return
         try:
             bucket = self._s3r.Bucket(bucket_name)
             bucket.objects.all().delete()

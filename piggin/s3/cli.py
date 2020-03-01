@@ -57,5 +57,29 @@ def ls(ctx, path, verbose):
         items = awsS3.ls(path)
         if items:
             print(items)
+            
+@s3.command(context_settings=CONTEXT_SETTINGS)
+@click.argument('path', default='s3:///')
+@click.option(
+    '--verbose/--silent',
+    '-v',
+    default=True,
+    help='Turn on/ off verbosity. [verbose/silent]')
+@click.option(
+    '--recursive/--norecursive',
+    '-r',
+    default=False,
+    help='Turn on/ off recursive delete.')
+@click.pass_context
+def rm(ctx, path, verbose, recursive):
+    """
+        list s3 buckets.
+    """
+    access_key = ctx.obj['access_key']
+    secret_key = ctx.obj['secret_key']
+    
+    with OSEnvAwsReset(access_key, secret_key):
+        awsS3 = AwsS3(access_key, secret_key)
+        awsS3.rm(path, verbose, recursive)
     
 
