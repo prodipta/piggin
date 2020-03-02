@@ -1,0 +1,9 @@
+piggin.egg-info
+build/
+dist/
+__*/
+.spyproject
+*__pycache__/
+docs/build
+*.ini
+*.example
