@@ -78,8 +78,9 @@ def rm(ctx, path, verbose, recursive):
     """
     access_key = ctx.obj['access_key']
     secret_key = ctx.obj['secret_key']
+    profile_name = ctx.obj['profile_name']
     
-    with OSEnvAwsReset(access_key, secret_key):
+    with OSEnvAwsReset(access_key, secret_key, profile_name):
         awsS3 = AwsS3(access_key, secret_key)
         awsS3.rm(path, verbose, recursive)
         
@@ -111,11 +112,10 @@ def mkdir(ctx, path, verbose, parent, location, acl):
     """
     access_key = ctx.obj['access_key']
     secret_key = ctx.obj['secret_key']
-    
-    print(f'{path},{verbose},{parent},{location},{acl}')
+    profile_name = ctx.obj['profile_name']
     
     with OSEnvAwsReset(access_key, secret_key):
-        awsS3 = AwsS3(access_key, secret_key)
+        awsS3 = AwsS3(access_key, secret_key, profile_name)
         awsS3.mkdir(path, verbose, parent, location, acl)
     
 

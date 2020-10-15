@@ -15,28 +15,39 @@
 import boto3
 import json
 import awscli
+import logging
 
 from piggin.utils.utils import read_tags
 
-class AwsS3(object):
+class AwsEC2(object):
     
-    def __init__(self, config_file=None, dry_run=False):
-        self._ec2r = boto3.resource('ec2')
-        self._ec2c = boto3.client('ec2')
-        self._config = {}
+    def __init__(self, access_key=None, secret_key=None, 
+                 profile_name=None, region=None):
+        session = boto3.Session(aws_access_key_id=access_key,
+                                aws_secret_access_key=secret_key,
+                                profile_name=profile_name)
+        
+        if session.region_name is None:
+            self._default_region = region
+        else:
+            self._default_region = session.region_name
+        
+        self._ec2r = session.resource('ec2', region_name=self._default_region)
+        self._ec2c = session.client('ec2', region_name=self._default_region)
+        self._logger = logging.getLogger('ec2')
 
-        if config_file:
-            with open(config_file) as fp:
-                self._config = json.​load(fp)
-                
     def create_ec2(self, image_id=None, ninstance=1, key_name=None, 
                    ebs_size=None, instance_type=None, tags = None,
-                   ebs_type=None):
+                   ebs_type=None, config=None):
+        
+        if config:
+            with open(config) as fp:
+                data = json.load(fp)
         
         # required options
-        image_id = image_id | self._config.get('image_id', None)
-        key_name = key_name | self._config.get('key_name', None)
-        ebs_size = ebs_size | self._config.get('ebs_size', None)
+        image_id = image_id | data.get('image_id', None)
+        key_name = key_name | data.get('key_name', None)
+        ebs_size = ebs_size | data.get('ebs_size', None)
         
         if not all([image_id, key_name, ebs_size]):
             msg = 'image_id, key_name and ebs_size must be specified.'
@@ -48,12 +59,12 @@ class AwsS3(object):
             raise ValueError(msg)
         
         # options with defaults
-        ninstance = ninstance | self._config.get('ninstance', 1)
-        instance_type = instance_type | self._config.get('instance_type', 't2.micro')
-        ebs_type = key_name | self._config.get('key_name', 'standard')
+        ninstance = ninstance | data.get('ninstance', 1)
+        instance_type = instance_type | data.get('instance_type', 't2.micro')
+        ebs_type = key_name | data.get('key_name', 'standard')
         
         try:
-            ins = self._ec2r.​create_instances(
+            ins = self._ec2r.create_instances(
                     ImageId=image_id,
                     MinCount=1,
                     MaxCount=ninstance,
@@ -81,7 +92,10 @@ class AwsS3(object):
         
         try:
             tagname=ins[0].id
-            ec2.​create_tags(Resources=[tagname], Tags=[tags])
+            self._ec2r.create_tags(Resources=[tagname], Tags=[tags])
         except Exception as e:
             raise e
             
+    def ls(self):
+        instances = self._ec2r.instances.filter(Filters=[{'Name': 'instance-state-name', 'Values': ['running']}])
+        return instances
