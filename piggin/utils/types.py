@@ -34,37 +34,6 @@ class HashKeyType(click.ParamType):
         if not matched:
             self.fail(f'{value} is not a valid SHA/ MD5 key', param, ctx)
         return value
-
-class TimezoneType(click.ParamType):
-    name = 'Standard time zone names'
-    def convert(self, value, param, ctx):
-        valid = str(value) in pytz_all_timezones
-        if not valid:
-            self.fail(f'{value} is not a valid time zone', param, ctx)
-        return value
-
-class DateType(click.ParamType):
-    name = 'Date input'
-    def __init__(self):
-        strformats = ['%Y-%m-%d', '%d-%b-%Y', '%Y-%b-%d']
-        self.formats = strformats
-        super(DateType, self).__init__()
-
-    def _try_to_convert_date(self, value, format):
-        try:
-            return datetime.strptime(value, format)
-        except ValueError:
-            return None
-
-    def convert(self, value, param, ctx):
-        for format in self.formats:
-            dt = self._try_to_convert_date(value, format)
-            if dt:
-                return pd.Timestamp(dt)
-
-        self.fail(
-            'invalid datetime format: {}. (choose from {})'.format(
-                value, ', '.join(self.formats)))
         
 class OSEnvAwsReset():
     '''
