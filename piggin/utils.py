@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import re
 
 from piggin.s3.s3 import AwsS3
 
@@ -57,6 +58,11 @@ def copy_from_s3(src, dest, pattern, access_key=None,
     if not os.path.isdir(path):
         raise ValueError('destination location must be a directory.')
         
+    if pattern:
+        p = re.compile(pattern)
+    else:
+        p = re.compile('.')
+        
     files = awsS3.ls(src)
     
     for file in files:
@@ -66,9 +72,8 @@ def copy_from_s3(src, dest, pattern, access_key=None,
             continue
         
         name = file.split('/')[-1]
-        if pattern is not None:
-            if pattern not in name:
-                continue
+        if not re.search(p, name):
+            continue
         
         source = 's3:///'+bucket+'/'+file
         target = os.path.join(dest, name)
