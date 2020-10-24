@@ -14,7 +14,7 @@
 
 import click
 
-from piggin.utils.types import HashKeyType
+from piggin.common.types import HashKeyType
 from piggin.s3.cli import s3
 from piggin.ec2.cli import ec2
 

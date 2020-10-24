@@ -15,7 +15,7 @@
 
 import click
 from piggin.s3.s3 import AwsS3
-from piggin.utils.types import OSEnvAwsReset
+from piggin.common.types import OSEnvAwsReset
 
 CONTEXT_SETTINGS = dict(ignore_unknown_options=True,
                         allow_extra_args=True,

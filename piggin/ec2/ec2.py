@@ -17,7 +17,7 @@ import json
 import awscli
 import logging
 
-from piggin.utils.utils import read_tags
+from piggin.common.utils import read_tags
 
 class AwsEC2(object):
     

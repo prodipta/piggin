@@ -15,7 +15,7 @@
 
 import click
 from piggin.ec2.ec2 import AwsEC2
-from piggin.utils.types import OSEnvAwsReset
+from piggin.common.types import OSEnvAwsReset
 
 CONTEXT_SETTINGS = dict(ignore_unknown_options=True,
                         allow_extra_args=True,

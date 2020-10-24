@@ -16,7 +16,7 @@ import logging
 import boto3
 from botocore.exceptions import ClientError
 
-from piggin.utils.utils import confirm_action
+from piggin.common.utils import confirm_action
 
 class AwsS3(object):
     
