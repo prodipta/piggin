@@ -14,6 +14,7 @@
 
 import os
 import re
+import logging
 
 from piggin.s3.s3 import AwsS3
 
@@ -65,16 +66,20 @@ def copy_from_s3(src, dest, pattern, access_key=None,
         
     files = awsS3.ls(src)
     
-    for file in files:
-        if file == src:
-            continue
-        if file.endswith('/'):
-            continue
-        
-        name = file.split('/')[-1]
-        if not re.search(p, name):
-            continue
-        
-        source = 's3:///'+bucket+'/'+file
-        target = os.path.join(dest, name)
-        awsS3.copy(source, target)
+    try:
+        for file in files:
+            if file == src:
+                continue
+            if file.endswith('/'):
+                continue
+            
+            name = file.split('/')[-1]
+            if not re.search(p, name):
+                continue
+            
+            source = 's3:///'+bucket+'/'+file
+            target = os.path.join(dest, name)
+            awsS3.copy(source, target)
+    except:
+        logging.error(f'failed copying from s3:{file}')
+        raise
