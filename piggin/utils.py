@@ -18,7 +18,7 @@ import logging
 
 from piggin.s3.s3 import AwsS3
 
-def copy_from_s3(src, dest, pattern, access_key=None, 
+def copy_from_s3(src, dest, pattern, recursive=False, access_key=None, 
                secret_key=None, profile=None):
     """
         Copy files from s3 source to local file system.
@@ -29,6 +29,8 @@ def copy_from_s3(src, dest, pattern, access_key=None,
             `dest (src)`: Local file system target.
             
             `pattern (str)`: Pattern to match.
+            
+            `recursive (bool)`: If search directories recursively.
             
             `access_key (str)`: AWS access key.
             
@@ -71,6 +73,11 @@ def copy_from_s3(src, dest, pattern, access_key=None,
             if file == src:
                 continue
             if file.endswith('/'):
+                if recursive:
+                    copy_from_s3(
+                            's3:///'+bucket+'/'+file, dest, pattern, 
+                            recursive=recursive, access_key=access_key, 
+                            secret_key=secret_key, profile=profile)
                 continue
             
             name = file.split('/')[-1]
