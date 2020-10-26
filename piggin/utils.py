@@ -24,14 +24,20 @@ logger.setLevel(logging.INFO)
 def copy_from_s3(src, dest, pattern, recursive=False, access_key=None, 
                secret_key=None, profile=None):
     """
-        Copy files from s3 source to local file system.
+        Copy files from s3 source to local file system. The pattern will be
+        matched using regex. If `recursive` is False, any directory at the 
+        current level will be skipped. If `dest` is a list, `pattern` must 
+        also be a list of equal length. In this case, for each pattern in 
+        the list, the corresponding element from `dest` is picked for the 
+        destination of the copy operation. This allows to search and copy 
+        multiple files in a single pass through the s3 keys.
         
         Args:
             `src (str)`: S3 bucket and key path name.
             
-            `dest (src)`: Local file system target.
+            `dest (str or list)`: Local file system target.
             
-            `pattern (str)`: Pattern to match.
+            `pattern (str or list)`: Pattern to match.
             
             `recursive (bool)`: If search directories recursively.
             
@@ -77,7 +83,6 @@ def copy_from_s3(src, dest, pattern, recursive=False, access_key=None,
             if file == key:
                 continue
             if file.endswith('/'):
-                print(f'calling recursively...')
                 if recursive:
                     copy_from_s3(
                             's3:///'+bucket+'/'+file, dest, pattern, 
