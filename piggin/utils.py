@@ -73,9 +73,11 @@ def copy_from_s3(src, dest, pattern, recursive=False, access_key=None,
     
     try:
         for file in files:
+            logger.info(f'processing file {file} in {bucket}.')
             if file == src:
                 continue
             if file.endswith('/'):
+                logger.info(f'calling recursively...')
                 if recursive:
                     copy_from_s3(
                             's3:///'+bucket+'/'+file, dest, pattern, 
