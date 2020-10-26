@@ -18,6 +18,9 @@ import logging
 
 from piggin.s3.s3 import AwsS3
 
+logger = logging.getLogger('piggin')
+logger.setLevel(logging.INFO)
+
 def copy_from_s3(src, dest, pattern, recursive=False, access_key=None, 
                secret_key=None, profile=None):
     """
@@ -87,6 +90,7 @@ def copy_from_s3(src, dest, pattern, recursive=False, access_key=None,
             source = 's3:///'+bucket+'/'+file
             target = os.path.join(dest, name)
             awsS3.copy(source, target)
+            logger.info(f'copied file {source} to {target}.')
     except:
-        logging.error(f'failed copying from s3:{file}')
+        logger.error(f'failed copying from s3:{file}')
         raise
