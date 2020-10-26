@@ -73,7 +73,7 @@ def copy_from_s3(src, dest, pattern, recursive=False, access_key=None,
     
     try:
         for file in files:
-            print(f'processing file {file} in {bucket}.')
+            print(f'processing file {file} in {bucket}, key {key}.')
             if file == src:
                 continue
             if file.endswith('/'):
