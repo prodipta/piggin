@@ -73,11 +73,11 @@ def copy_from_s3(src, dest, pattern, recursive=False, access_key=None,
     
     try:
         for file in files:
-            logger.info(f'processing file {file} in {bucket}.')
+            print(f'processing file {file} in {bucket}.')
             if file == src:
                 continue
             if file.endswith('/'):
-                logger.info(f'calling recursively...')
+                print(f'calling recursively...')
                 if recursive:
                     copy_from_s3(
                             's3:///'+bucket+'/'+file, dest, pattern, 
@@ -92,7 +92,7 @@ def copy_from_s3(src, dest, pattern, recursive=False, access_key=None,
             source = 's3:///'+bucket+'/'+file
             target = os.path.join(dest, name)
             awsS3.copy(source, target)
-            logger.info(f'copied file {source} to {target}.')
+            print(f'copied file {source} to {target}.')
     except:
         logger.error(f'failed copying from s3:{file}')
         raise
